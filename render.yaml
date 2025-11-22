@@ -1,7 +1,10 @@
 services:
   - type: web
     name: passport-photo-generator
+    runtime: node
     env: node
+    region: oregon
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
@@ -9,4 +12,3 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
-    healthCheckPath: /health
