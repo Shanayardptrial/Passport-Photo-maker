@@ -20,8 +20,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!require('fs').existsSync(uploadsDir)) {
+// Use /tmp for Vercel serverless environment
+const uploadsDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'uploads');
+if (!process.env.VERCEL && !require('fs').existsSync(uploadsDir)) {
   require('fs').mkdirSync(uploadsDir);
 }
 
