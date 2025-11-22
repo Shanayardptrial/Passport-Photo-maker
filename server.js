@@ -6,7 +6,6 @@ const sharp = require('sharp');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
-const { removeBackgroundWithCarve } = require('./carve_automation');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -89,75 +88,64 @@ app.post('/api/remove-background', upload.single('image'), async (req, res) => {
     const passportHeight = 531; // 45mm at 300 DPI
     const borderWidth = 10;
 
-    // Save uploaded file temporarily
-    const tempInputPath = path.join(uploadsDir, `temp_${Date.now()}_input.png`);
-    const tempOutputPath = path.join(uploadsDir, `temp_${Date.now()}_output.png`);
+    try {
+      // Try to use imgly background removal
+      console.log('🎨 Removing background with AI...');
+      const { removeBackground } = require('@imgly/background-removal-node');
 
-    await fs.writeFile(tempInputPath, req.file.buffer);
+      const bgRemovedBuffer = await removeBackground(req.file.buffer);
 
-    // Use carve.photos automation to remove background
-    console.log('🎨 Removing background with carve.photos automation...');
-    const success = await removeBackgroundWithCarve(tempInputPath, tempOutputPath);
+      console.log('✅ Background removed successfully');
 
-    // Clean up input file
-    await fs.unlink(tempInputPath).catch(() => { });
+      // Resize to passport size
+      const resizedImage = await sharp(bgRemovedBuffer)
+        .resize(passportWidth, passportHeight, {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent
+        })
+        .png()
+        .toBuffer();
 
-    if (!success) {
-      console.error('Carve automation failed');
+      // Add blue background
+      const withBackground = await sharp({
+        create: {
+          width: passportWidth,
+          height: passportHeight,
+          channels: 4,
+          background: { r: 74, g: 144, b: 226, alpha: 1 } // #4A90E2
+        }
+      })
+        .composite([{ input: resizedImage, gravity: 'center' }])
+        .png()
+        .toBuffer();
+
+      // Add black border
+      const finalImage = await sharp(withBackground)
+        .extend({
+          top: borderWidth,
+          bottom: borderWidth,
+          left: borderWidth,
+          right: borderWidth,
+          background: { r: 0, g: 0, b: 0, alpha: 1 }
+        })
+        .png()
+        .toBuffer();
+
+      const finalBase64 = finalImage.toString('base64');
+
+      console.log('✅ Image processed successfully with AI background removal');
+      res.json({
+        success: true,
+        image: `data:image/png;base64,${finalBase64}`,
+        message: 'Passport photo created with AI background removal'
+      });
+
+    } catch (bgError) {
+      console.error('Background removal failed:', bgError.message);
       console.log('Falling back to processing without background removal');
       // Fallback: process without background removal
       await processWithoutBgRemoval(req.file.buffer, res, passportWidth, passportHeight, borderWidth);
-      return;
     }
-
-    // Read the background-removed image
-    const bgRemovedBuffer = await fs.readFile(tempOutputPath);
-
-    // Clean up output file
-    await fs.unlink(tempOutputPath).catch(() => { });
-
-    // Resize to passport size
-    const resizedImage = await sharp(bgRemovedBuffer)
-      .resize(passportWidth, passportHeight, {
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent
-      })
-      .png()
-      .toBuffer();
-
-    // Add blue background
-    const withBackground = await sharp({
-      create: {
-        width: passportWidth,
-        height: passportHeight,
-        channels: 4,
-        background: { r: 74, g: 144, b: 226, alpha: 1 } // #4A90E2
-      }
-    })
-      .composite([{ input: resizedImage, gravity: 'center' }])
-      .png()
-      .toBuffer();
-
-    // Add black border
-    const finalImage = await sharp(withBackground)
-      .extend({
-        top: borderWidth,
-        bottom: borderWidth,
-        left: borderWidth,
-        right: borderWidth,
-        background: { r: 0, g: 0, b: 0, alpha: 1 }
-      })
-      .png()
-      .toBuffer();
-
-    const finalBase64 = finalImage.toString('base64');
-
-    console.log('✅ Image processed successfully with AI background removal');
-    res.json({
-      success: true,
-      image: `data:image/png;base64,${finalBase64}`,
-      message: 'Passport photo created with AI background removal'
-    });
 
   } catch (error) {
     console.error('Error processing image:', error);
