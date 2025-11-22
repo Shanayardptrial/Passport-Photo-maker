@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alimatic - Passport Photo Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="app" class="app-wrapper">
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Camera Icon -->
+                    <g filter="url(#glow)">
+                        <rect x="2" y="12" width="28" height="22" rx="3" stroke="#00f3ff" stroke-width="2"
+                            fill="none" />
+                        <circle cx="16" cy="23" r="6" stroke="#00f3ff" stroke-width="2" fill="none" />
+                        <rect x="24" y="15" width="4" height="3" rx="1" fill="#00f3ff" />
+                    </g>
+                    <!-- Text "Alimatic" -->
+                    <text x="38" y="32" font-family="Inter, sans-serif" font-size="24" font-weight="700"
+                        fill="url(#gradient)" filter="url(#textGlow)">
+                        Alimatic
+                    </text>
+                    <!-- Gradient Definition -->
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#00f3ff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0099ff;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <filter id="textGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                </svg>
+            </div>
+            <nav class="stepper">
+                <div class="step is-active" data-step="1">1. Upload</div>
+                <div class="step" data-step="2">2. Edit</div>
+                <div class="step" data-step="3">3. Print</div>
+            </nav>
+        </header>
+
+        <!-- Main Content Views -->
+        <main class="app-main">
+
+            <!-- VIEW 1: UPLOAD -->
+            <section id="view-upload" class="view is-visible">
+                <div class="upload-container">
+                    <h1>Create Professional Passport Photos</h1>
+                    <p class="subtitle">Upload an image to get started. We'll remove the background automatically.</p>
+
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <h3>Click or Drag Photo Here</h3>
+                            <p class="meta">Supports JPG, PNG, WEBP (Max 10MB)</p>
+                        </div>
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: EDITOR -->
+            <section id="view-editor" class="view">
+                <div class="editor-grid">
+                    <div class="canvas-area">
+                        <div class="img-container">
+                            <img id="editor-image" src="" alt="Editing">
+                        </div>
+                    </div>
+                    <div class="controls-area">
+                        <h2>Adjust Photo</h2>
+                        <p>Crop your photo to the standard passport size.</p>
+
+                        <div class="btn-group">
+                            <button id="btn-rotate" class="btn btn-secondary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38" />
+                                </svg>
+                                Rotate
+                            </button>
+                            <button id="btn-reset" class="btn btn-secondary">Reset</button>
+                        </div>
+
+                        <div class="action-area">
+                            <button id="btn-process" class="btn btn-primary btn-large">
+                                <span>Next: Remove Background</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                            <button id="btn-cancel" class="btn btn-text">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: PRINT -->
+            <section id="view-print" class="view">
+                <div class="print-grid">
+                    <div class="preview-area">
+                        <div id="a4-preview" class="a4-sheet">
+                            <!-- Photos injected here -->
+                        </div>
+                    </div>
+                    <div class="print-controls">
+                        <div class="success-message">
+                            <div class="icon-check">✓</div>
+                            <h3>Ready to Print</h3>
+                        </div>
+
+                        <div class="control-block">
+                            <label>Copies</label>
+                            <div class="pill-selector" id="count-selector">
+                                <button data-count="5">5</button>
+                                <button data-count="10">10</button>
+                                <button data-count="15">15</button>
+                                <button data-count="30" class="is-selected">30</button>
+                            </div>
+                        </div>
+
+                        <button id="btn-print" class="btn btn-success btn-large">Print Now</button>
+                        <button id="btn-new" class="btn btn-secondary">Start Over</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>This Tool Created By (Ali-Afzal) ❤️ -2025</p>
+        </footer>
+
+        <!-- Overlays -->
+        <div id="overlay-loading" class="overlay is-hidden">
+            <div class="spinner-card">
+                <div class="spinner"></div>
+                <h3 id="loading-text">Processing...</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
